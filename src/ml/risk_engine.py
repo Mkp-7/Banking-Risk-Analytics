@@ -34,16 +34,37 @@ FEATURES = [
     "loan_to_deposit_ratio", "net_interest_margin", "cost_to_income_ratio"
 ]
 
+# Macro features added from FRED pipeline
+MACRO_FEATURES = [
+    "fed_funds", "treasury_10y", "treasury_2y",
+    "yield_curve_spread", "rate_hike_from_trough", "yield_curve_inverted"
+]
+
 
 # ── Load Data ─────────────────────────────────────────────────────────────────
 
 def load_data():
     conn = sqlite3.connect(DB_PATH)
     institutions = pd.read_sql("SELECT * FROM institutions", conn)
-    failures = pd.read_sql("SELECT * FROM failures", conn)
+    failures     = pd.read_sql("SELECT * FROM failures", conn)
+
+    # Load interest rate data and merge Q3 2025 rates onto institutions
+    rates_df = pd.DataFrame()
+    try:
+        rates_df = pd.read_sql("SELECT * FROM interest_rates ORDER BY date DESC", conn)
+        if not rates_df.empty:
+            # Use most recent rate observation for all banks (same reporting period)
+            latest_rates = rates_df.iloc[0]
+            for col in MACRO_FEATURES:
+                if col in rates_df.columns:
+                    institutions[col] = pd.to_numeric(latest_rates.get(col, np.nan), errors="coerce")
+            print(f"  Macro features added: fed_funds={latest_rates.get('fed_funds','N/A'):.2f}%")
+    except Exception as e:
+        print(f"  Note: interest rate data not found ({e}) — run fred_pipeline.py first")
+
     conn.close()
-    print(f"  institutions columns: {list(institutions.columns)}")
-    print(f"  failures columns:     {list(failures.columns)}")
+    print(f"  institutions: {len(institutions)} rows, {len(institutions.columns)} columns")
+    print(f"  failures:     {len(failures)} rows")
     return institutions, failures
 
 
@@ -105,12 +126,22 @@ def prepare_supervised_dataset(institutions: pd.DataFrame, failures: pd.DataFram
         rename_map[size_col] = "size_bucket"
 
     available_features = [f for f in FEATURES if f in df.columns]
+    # Always keep cert_id for joining
+    for id_col in ["cert_id", "ID"]:
+        if id_col in df.columns and id_col not in meta_cols:
+            meta_cols.append(id_col)
     df_model = df[available_features + meta_cols].copy().rename(columns=rename_map)
 
     # Fill any missing FEATURES columns with NaN
     for f in FEATURES:
         if f not in df_model.columns:
             df_model[f] = np.nan
+
+    # Keep cert_id for joining back to institutions
+    cert_col = find_col(df, ["cert_id", "ID", "CERT"])
+    if cert_col and cert_col not in meta_cols:
+        meta_cols.append(cert_col)
+        rename_map[cert_col] = "cert_id"
 
     df_model = df_model.dropna(subset=available_features, thresh=max(3, len(available_features) // 2))
 
@@ -121,7 +152,9 @@ def prepare_supervised_dataset(institutions: pd.DataFrame, failures: pd.DataFram
 # ── Supervised Models ─────────────────────────────────────────────────────────
 
 def train_supervised(df: pd.DataFrame) -> dict:
-    X = df[FEATURES]
+    all_features = FEATURES + [f for f in MACRO_FEATURES if f in df.columns]
+    available = [f for f in all_features if f in df.columns]
+    X = df[available]
     y = df["at_risk"]
 
     X_train, X_test, y_train, y_test = train_test_split(
@@ -172,8 +205,10 @@ def train_supervised(df: pd.DataFrame) -> dict:
 
     # Feature importance from Random Forest
     rf_model = results["Random Forest"]["pipeline"].named_steps["model"]
+    all_features = FEATURES + [f for f in MACRO_FEATURES if f in df.columns]
+    used_features = [f for f in all_features if f in df.columns]
     importance_df = pd.DataFrame({
-        "feature": FEATURES,
+        "feature": used_features[:len(rf_model.feature_importances_)],
         "importance": rf_model.feature_importances_
     }).sort_values("importance", ascending=False)
     results["feature_importance"] = importance_df
@@ -197,7 +232,9 @@ def train_supervised(df: pd.DataFrame) -> dict:
 # ── K-Means Clustering ────────────────────────────────────────────────────────
 
 def train_clustering(df: pd.DataFrame) -> pd.DataFrame:
-    X = df[FEATURES].copy()
+    all_features = FEATURES + [f for f in MACRO_FEATURES if f in df.columns]
+    available = [f for f in all_features if f in df.columns]
+    X = df[available].copy()
     imputer = SimpleImputer(strategy="median")
     scaler = StandardScaler()
     X_imp = imputer.fit_transform(X)
@@ -234,7 +271,9 @@ def train_clustering(df: pd.DataFrame) -> pd.DataFrame:
 # ── Score All Banks ───────────────────────────────────────────────────────────
 
 def score_institutions(df: pd.DataFrame, rf_pipeline) -> pd.DataFrame:
-    X = df[FEATURES]
+    all_features = FEATURES + [f for f in MACRO_FEATURES if f in df.columns]
+    available = [f for f in all_features if f in df.columns]
+    X = df[available]
     df = df.copy()
     df["failure_probability"] = rf_pipeline.predict_proba(X)[:, 1]
     df["predicted_at_risk"]   = rf_pipeline.predict(X)

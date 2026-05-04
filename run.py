@@ -19,7 +19,8 @@ def run(script, label):
 if __name__ == "__main__":
     base = os.path.dirname(__file__)
     run(os.path.join(base, "src/pipeline/fdic_pipeline.py"), "Phase 1: FDIC Data Pipeline")
-    run(os.path.join(base, "src/ml/risk_engine.py"), "Phase 2: ML Risk Engine")
+    run(os.path.join(base, "src/pipeline/fred_pipeline.py"), "Phase 2: FRED Interest Rate Pipeline")
+    run(os.path.join(base, "src/ml/risk_engine.py"),         "Phase 3: ML Risk Engine")
     print("\n" + "="*60)
     print("  All phases complete! Launching dashboard...")
     print("="*60)
