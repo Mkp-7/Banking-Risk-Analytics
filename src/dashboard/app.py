@@ -289,7 +289,15 @@ def tab_ml_scoring(df: pd.DataFrame):
         watchlist["failure_probability"] = watchlist["failure_probability"].map("{:.1%}".format)
         st.dataframe(watchlist, use_container_width=True, height=400)
     else:
-        st.info("Run the ML engine first: `python src/ml/risk_engine.py`")
+        # Show risk tier based watchlist using KRI data even without ML scores
+        st.info("ML risk scores not available — showing KRI-based high risk banks")
+        avail = [c for c in ["city","state","size_bucket","ROA",
+                             "capital_adequacy_ratio","npl_ratio",
+                             "risk_tier","loan_to_deposit_ratio"] if c in df.columns]
+        watchlist = df[df["risk_tier"] == "HIGH"].sort_values(
+            "capital_adequacy_ratio", ascending=True
+        )[avail].head(50)
+        st.dataframe(watchlist, use_container_width=True, height=400)
 
 
 # ── Tab: Control Testing ──────────────────────────────────────────────────────
@@ -355,13 +363,18 @@ def tab_control_testing(df: pd.DataFrame, failures: pd.DataFrame):
 
 def tab_search(df: pd.DataFrame):
     st.markdown("#### 🔍 Institution Risk Profile Lookup")
-    search = st.text_input("Search bank name", placeholder="e.g. Wells Fargo, JPMorgan...")
+    search = st.text_input("Search by city or state", placeholder="e.g. New York, California, Chicago...")
     if search:
-        name_col = next((c for c in ["bank_name","INSTNAME","city"] if c in df.columns), None)
-        results = df[df[name_col].str.contains(search, case=False, na=False)] if name_col else pd.DataFrame()
+        # Search across city and state columns which exist in actual DB
+        mask = pd.Series([False] * len(df), index=df.index)
+        for col in ["city", "state"]:
+            if col in df.columns:
+                mask = mask | df[col].astype(str).str.contains(search, case=False, na=False)
+        results = df[mask]
         if len(results) == 0:
-            st.warning("No institutions found.")
+            st.warning("No institutions found. Try searching by city (e.g. 'New York') or state (e.g. 'California')")
         else:
+            st.success(f"Found {len(results):,} institutions")
             for _, row in results.head(5).iterrows():
                 risk_color = {"HIGH": "🔴", "MEDIUM": "🟡", "LOW": "🟢"}.get(row.get("risk_tier", ""), "⚪")
                 with st.expander(f"{risk_color} {row.get('city','Unknown')} — {row.get('state','')}"):
@@ -382,7 +395,6 @@ def main():
     st.markdown("*FDIC BankFind Data · Basel III KRIs · ML Risk Scoring · CCAR-aligned Analytics*")
     st.divider()
 
-    st.caption(f"Looking for DB at: {DB_PATH}")
     if not os.path.exists(DB_PATH):
         st.error("⚠️ Database not found. Run the data pipeline first:")
         st.code("python src/pipeline/fdic_pipeline.py\npython src/ml/risk_engine.py")
