@@ -99,14 +99,24 @@ def prepare_supervised_dataset(institutions: pd.DataFrame, failures: pd.DataFram
             failed_certs.update(failures[col].dropna().astype(str).tolist())
     print(f"  Failed cert set size: {len(failed_certs)}")
 
-    # Binary label
-    df["failed_historically"] = df["cert_str"].isin(failed_certs).astype(int)
-    df["high_risk_kri"] = (
-        (pd.to_numeric(df.get("ROA"), errors="coerce") < 0) |
-        (pd.to_numeric(df.get("capital_adequacy_ratio"), errors="coerce") < 8) |
-        (pd.to_numeric(df.get("npl_ratio"), errors="coerce") > 10)
-    ).astype(int)
-    df["at_risk"] = ((df["failed_historically"] == 1) | (df["high_risk_kri"] == 1)).astype(int)
+    # ── Label Construction ───────────────────────────────────────────────────
+    # Use ONLY historical failure record as ground truth label.
+    # Deliberately excluding current KRI thresholds from label to avoid
+    # circular learning (model would trivially memorize CAR<8 → at_risk=1
+    # since CAR is also a training feature).
+    # Historical failures (1934-present) provide genuine out-of-sample signal.
+    df["at_risk"] = df["cert_str"].isin(failed_certs).astype(int)
+
+    # Add noise via risk_tier as a weak supplemental signal (not KRI values directly)
+    # This adds ~5% more positive labels from severely distressed current banks
+    # without using raw KRI values that are also features
+    if "risk_tier" in df.columns:
+        severe = (df["risk_tier"] == "HIGH") & (df["at_risk"] == 0)
+        # Randomly sample 30% of HIGH risk non-failed banks as at_risk
+        # to simulate realistic forward-looking risk without pure circular logic
+        np.random.seed(42)
+        mask = severe & (np.random.rand(len(df)) < 0.30)
+        df.loc[mask, "at_risk"] = 1
 
     # Detect label columns flexibly and rename to standard names
     name_col  = find_col(df, ["bank_name", "INSTNAME", "name", "NAME"])
