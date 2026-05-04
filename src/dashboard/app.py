@@ -363,21 +363,38 @@ def tab_control_testing(df: pd.DataFrame, failures: pd.DataFrame):
 
 def tab_search(df: pd.DataFrame):
     st.markdown("#### 🔍 Institution Risk Profile Lookup")
-    search = st.text_input("Search by city or state", placeholder="e.g. New York, California, Chicago...")
+
+    # Load institution names directly from DB
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        names_df = pd.read_sql("SELECT cert_id, INSTNAME FROM institutions", conn)
+        conn.close()
+        inst_col = "INSTNAME"
+    except Exception:
+        names_df = pd.DataFrame()
+        inst_col = None
+
+    if inst_col and not names_df.empty:
+        df = df.copy()
+        df["cert_id"] = df["cert_id"].astype(str) if "cert_id" in df.columns else df.get("ID", pd.NA)
+        names_df["cert_id"] = names_df["cert_id"].astype(str)
+        df = df.merge(names_df, on="cert_id", how="left")
+
+    search = st.text_input("Search by bank name, city or state", placeholder="e.g. Chase, New York, California...")
     if search:
-        # Search across city and state columns which exist in actual DB
         mask = pd.Series([False] * len(df), index=df.index)
-        for col in ["city", "state"]:
+        for col in ["INSTNAME", "city", "state"]:
             if col in df.columns:
                 mask = mask | df[col].astype(str).str.contains(search, case=False, na=False)
-        results = df[mask]
+        results = df[mask].drop_duplicates(subset=["cert_id"] if "cert_id" in df.columns else None)
         if len(results) == 0:
-            st.warning("No institutions found. Try searching by city (e.g. 'New York') or state (e.g. 'California')")
+            st.warning("No institutions found.")
         else:
             st.success(f"Found {len(results):,} institutions")
-            for _, row in results.head(5).iterrows():
+            for _, row in results.head(8).iterrows():
                 risk_color = {"HIGH": "🔴", "MEDIUM": "🟡", "LOW": "🟢"}.get(row.get("risk_tier", ""), "⚪")
-                with st.expander(f"{risk_color} {row.get('city','Unknown')} — {row.get('state','')}"):
+                bank_label = row.get("INSTNAME", row.get("city", "Unknown"))
+                with st.expander(f"{risk_color} {bank_label} — {row.get('city','')}, {row.get('state','')}"):
                     c1, c2, c3 = st.columns(3)
                     c1.metric("Capital Adequacy", f"{row.get('capital_adequacy_ratio', 'N/A'):.1f}%" if pd.notna(row.get('capital_adequacy_ratio')) else "N/A")
                     c2.metric("NPL Ratio", f"{row.get('npl_ratio', 'N/A'):.2f}%" if pd.notna(row.get('npl_ratio')) else "N/A")
@@ -418,17 +435,18 @@ def main():
             if col in risk_scores.columns:
                 risk_scores[col] = pd.to_numeric(risk_scores[col], errors="coerce")
 
-    # Merge ML scores if available
+    # Merge ML scores if available — try all possible join keys
     if not risk_scores.empty and "failure_probability" in risk_scores.columns:
-        # Find common join key between institutions and risk_scores
-        inst_key = next((c for c in ["cert_id","CERT","cert"] if c in institutions.columns), None)
-        rs_key   = next((c for c in ["cert_id","CERT","cert"] if c in risk_scores.columns), None)
+        inst_key = next((c for c in ["cert_id","ID","CERT","cert"] if c in institutions.columns), None)
+        rs_key   = next((c for c in ["cert_id","ID","CERT","cert"] if c in risk_scores.columns), None)
         ml_cols  = ["failure_probability","risk_score_100","risk_cluster_label",
                     "total_flags","predicted_at_risk","flag_low_capital",
                     "flag_high_npl","flag_negative_roa","flag_high_ldr"]
         ml_cols  = [c for c in ml_cols if c in risk_scores.columns]
         if inst_key and rs_key and ml_cols:
             rs_sub = risk_scores[[rs_key] + ml_cols].copy()
+            rs_sub[rs_key] = rs_sub[rs_key].astype(str)
+            institutions[inst_key] = institutions[inst_key].astype(str)
             if rs_key != inst_key:
                 rs_sub = rs_sub.rename(columns={rs_key: inst_key})
             df = institutions.merge(rs_sub, on=inst_key, how="left", suffixes=("", "_ml"))
