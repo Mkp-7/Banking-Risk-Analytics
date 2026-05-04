@@ -1,21 +1,21 @@
-# 🏦 Banking Operational Risk Intelligence Platform
+# Banking Operational Risk Intelligence Platform
 
-> **An end-to-end operational risk analytics system** replicating real-world LCD/compliance analyst workflows at financial institutions — built with real FDIC data, ML risk scoring, KRI/KPI monitoring, and an interactive Streamlit dashboard.
+> **An end-to-end operational risk analytics system** replicating real-world LCD/compliance analyst workflows at financial institutions - built with real FDIC data, ML risk scoring, KRI/KPI monitoring, and an interactive Streamlit dashboard.
 
 ---
 
-## 🎯 Business Problem
+## Business Problem
 
 Financial institutions (and their regulators) need to continuously monitor operational risk across thousands of banks. Manual processes are slow, inconsistent, and fail to catch early warning signs before they become systemic failures. This platform automates:
 
-- **Control exception detection** — automated KRI breach flagging across Basel III thresholds
-- **Risk-based sampling** — statistical sampling of high-risk institutions for control testing
-- **Predictive risk scoring** — ML models identify at-risk institutions before failure
-- **KRI/KPI reporting** — standardized reporting aligned with CCAR and regulatory frameworks
+- **Control exception detection** - automated KRI breach flagging across Basel III thresholds
+- **Risk-based sampling** - statistical sampling of high-risk institutions for control testing
+- **Predictive risk scoring** - ML models identify at-risk institutions before failure
+- **KRI/KPI reporting** - standardized reporting aligned with CCAR and regulatory frameworks
 
 ---
 
-## 📊 Data Sources (100% Real, Public Data)
+## Data Sources
 
 | Source | Description | Access |
 |--------|-------------|--------|
@@ -25,7 +25,7 @@ Financial institutions (and their regulators) need to continuously monitor opera
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 banking-risk-platform/
@@ -52,7 +52,7 @@ banking-risk-platform/
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Install dependencies
 ```bash
@@ -83,7 +83,7 @@ streamlit run src/dashboard/app.py
 
 ---
 
-## 🤖 Machine Learning
+## Machine Learning
 
 ### Supervised Models (Binary Classification: At-Risk vs Stable)
 
@@ -109,7 +109,7 @@ streamlit run src/dashboard/app.py
 
 ---
 
-## 📈 KRI Framework (Basel III / CCAR Aligned)
+## KRI Framework (Basel III / CCAR Aligned)
 
 | KRI | Warning Threshold | Critical Threshold | Regulatory Basis |
 |-----|------------------|--------------------|------------------|
@@ -126,7 +126,7 @@ streamlit run src/dashboard/app.py
 | Tab | Description |
 |-----|-------------|
 | 📈 Risk Overview | Risk tier distribution, scatter plots, failure history timeline |
-| 🗺️ KRI Heatmap | Interactive US choropleth — filter by any KRI metric |
+| 🗺️ KRI Heatmap | Interactive US choropleth - filter by any KRI metric |
 | 🤖 ML Scoring | Model comparison, feature importance, high-risk watchlist |
 | ✅ Control Testing | Control exception counts, breach rates, decade failure analysis |
 | 🔍 Institution Lookup | Search any bank by name for full risk profile |
@@ -137,41 +137,11 @@ streamlit run src/dashboard/app.py
 
 `sql/schema_and_queries.sql` includes 6 production-style KRI queries:
 
-1. **Control Exception Report** — Basel III capital breach detection
-2. **Multi-Flag Watch List** — Banks with 3+ simultaneous KRI breaches
-3. **State-Level KRI Summary** — Regulatory dashboard view
-4. **Historical Failure Cost Analysis** — Decade-by-decade failure trends
-5. **Risk-Based Sampling** — Statistical sampling for control testing (replicates CCAR methodology)
-6. **YoY Trend Analysis** — Institution-level ROA deterioration detection
+1. **Control Exception Report** - Basel III capital breach detection
+2. **Multi-Flag Watch List** - Banks with 3+ simultaneous KRI breaches
+3. **State-Level KRI Summary** - Regulatory dashboard view
+4. **Historical Failure Cost Analysis** - Decade-by-decade failure trends
+5. **Risk-Based Sampling** - Statistical sampling for control testing (replicates CCAR methodology)
+6. **YoY Trend Analysis** - Institution-level ROA deterioration detection
 
 ---
-
-## 💼 Resume Impact
-
-This project directly demonstrates:
-- ✅ **Business Intelligence dashboards** for operational risk (Morgan Stanley LCD requirement)
-- ✅ **Automated control testing programs** with risk-based sampling
-- ✅ **KRI and KPI reporting** aligned with Basel III / CCAR frameworks
-- ✅ **Python + SQL + ML** end-to-end pipeline
-- ✅ **Real financial data** from FDIC regulatory sources
-- ✅ **Regression + Supervised + Unsupervised ML** (all JD requirements)
-- ✅ **Streamlit** live demo deployable to Streamlit Cloud
-
----
-
-## 🌐 Deploy to Streamlit Cloud
-
-1. Push to GitHub
-2. Go to [share.streamlit.io](https://share.streamlit.io)
-3. Connect repo → set main file: `src/dashboard/app.py`
-4. Add startup command to fetch data first (see `run.py`)
-
----
-
-## 📜 License
-
-MIT License — built for portfolio demonstration using publicly available regulatory data.
-
----
-
-*Built by Mukundkumar Patel | MS Data Science, Montclair State University*
