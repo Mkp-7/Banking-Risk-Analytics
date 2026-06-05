@@ -29,6 +29,8 @@ Financial institutions and their regulators need to continuously monitor operati
 ---
 
 ## Architecture
+
+```
 banking-risk-platform/
 ├── src/
 │   ├── pipeline/
@@ -51,8 +53,7 @@ banking-risk-platform/
 │       ├── feature_importance.csv
 │       └── cluster_centers.csv
 └── run.py                        # Master pipeline runner
-
----
+```
 
 ## Quick Start
 
