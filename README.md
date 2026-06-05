@@ -1,14 +1,14 @@
 🏦 Banking Operational Risk Intelligence Platform
-An end-to-end operational risk analytics system built with real FDIC regulatory data, ML risk scoring, KRI/KPI monitoring, interest rate analysis, and an interactive Streamlit dashboard — replicating workflows used in financial institution compliance and risk management.
+An end-to-end operational risk analytics system built with real FDIC regulatory data, ML risk scoring, KRI/KPI monitoring, interest rate analysis, and an interactive Streamlit dashboard - replicating workflows used in financial institution compliance and risk management.
 
 🎯 Business Problem
 Financial institutions and their regulators need to continuously monitor operational risk across thousands of banks. Manual processes are slow, inconsistent, and fail to catch early warning signs before they become systemic failures. This platform automates:
 
-Control exception detection — automated KRI breach flagging across Basel III thresholds
-Risk-based sampling — statistical sampling of high-risk institutions for control testing
-Predictive risk scoring — ML models identify at-risk institutions before failure
-KRI/KPI reporting — standardized reporting aligned with CCAR and regulatory frameworks
-Macro risk overlay — Federal Reserve interest rate analysis and yield curve monitoring
+Control exception detection - automated KRI breach flagging across Basel III thresholds
+Risk-based sampling - statistical sampling of high-risk institutions for control testing
+Predictive risk scoring - ML models identify at-risk institutions before failure
+KRI/KPI reporting - standardized reporting aligned with CCAR and regulatory frameworks
+Macro risk overlay - Federal Reserve interest rate analysis and yield curve monitoring
 
 
 📊 Data Sources
@@ -72,7 +72,7 @@ Note on rate limits: The FDIC API enforces rate limits. If you encounter a 429 e
 🤖 Machine Learning
 Supervised Models (Binary Classification: At-Risk vs Stable)
 ModelROC-AUCAccuracyRecallF1Random Forest0.8471.8%92.3%0.463Gradient Boosting~0.82~70%~89%~0.44Logistic Regression~0.78~68%~85%~0.41
-Label Construction: Banks are labeled at-risk based on historical FDIC failure records (1934–present), supplemented by a 30% random sample of currently HIGH-risk institutions. KRI threshold values are intentionally excluded from label construction to avoid circular learning — the same metrics used as features cannot also define the target variable.
+Label Construction: Banks are labeled at-risk based on historical FDIC failure records (1934–present), supplemented by a 30% random sample of currently HIGH-risk institutions. KRI threshold values are intentionally excluded from label construction to avoid circular learning - the same metrics used as features cannot also define the target variable.
 Features:
 
 Return on Assets (ROA), Return on Equity (ROE)
@@ -93,12 +93,12 @@ SectionDescription📊 Executive SummaryKRI cards, risk tier distribution, capit
 🗂️ SQL Queries
 sql/schema_and_queries.sql includes 6 production-style KRI queries:
 
-Control Exception Report — Basel III capital breach detection
-Multi-Flag Watch List — Banks with 3+ simultaneous KRI breaches
-State-Level KRI Summary — Regulatory dashboard view
-Historical Failure Cost Analysis — Decade-by-decade failure trends
-Risk-Based Sampling — Statistical sampling replicating CCAR examination methodology
-YoY Trend Analysis — Institution-level ROA deterioration detection
+Control Exception Report - Basel III capital breach detection
+Multi-Flag Watch List - Banks with 3+ simultaneous KRI breaches
+State-Level KRI Summary - Regulatory dashboard view
+Historical Failure Cost Analysis - Decade-by-decade failure trends
+Risk-Based Sampling - Statistical sampling replicating CCAR examination methodology
+YoY Trend Analysis - Institution-level ROA deterioration detection
 
 
 ⚠️ Limitations
