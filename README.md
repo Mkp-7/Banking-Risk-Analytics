@@ -165,9 +165,3 @@ streamlit run src/dashboard/app.py
 - FRED data falls back to embedded quarterly averages if the API is unavailable
 
 ---
-
-## License
-
-MIT License - built for portfolio demonstration using regulatory data from US government sources.
-
-*Built by Mukundkumar Patel | MS Data Science, Montclair State University*
