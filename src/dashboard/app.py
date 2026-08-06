@@ -1,6 +1,6 @@
 """
 Banking Operational Risk Intelligence Platform
-Morgan Stanley Brand — Executive Dashboard
+Morgan Stanley Brand - Executive Dashboard
 """
 import streamlit as st
 import pandas as pd
@@ -358,6 +358,21 @@ def to_num(df):
     return df
 
 # ── Data ──────────────────────────────────────────────────────────────────────
+def _init_rates_if_needed():
+    """Run FRED pipeline once if interest_rates table is missing."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        tables = pd.read_sql("SELECT name FROM sqlite_master WHERE type='table'", conn)["name"].tolist()
+        conn.close()
+        if "interest_rates" not in tables:
+            import sys
+            fred_path = os.path.join(ROOT, "src", "pipeline", "fred_pipeline.py")
+            if os.path.exists(fred_path):
+                import subprocess
+                subprocess.run([sys.executable, fred_path], capture_output=True)
+    except Exception:
+        pass
+
 @st.cache_data(ttl=300)
 def load_rates():
     """Load interest rate data from DB."""
@@ -608,7 +623,7 @@ def tab_executive(df, failures):
 
 # ═══════════════ TAB 2: RISK HEATMAP ═════════════════════════════════════════
 def tab_heatmap(df):
-    st.caption("Note: Risk Tier filter does not apply to the heatmap — it always shows all tiers per state for accurate geographic risk distribution.")
+    st.caption("Note: Risk Tier filter does not apply to the heatmap - it always shows all tiers per state for accurate geographic risk distribution.")
     df = df.copy()
     df["st2"] = df["state"].str.upper().map(STATE_MAP).fillna(df["state"])
     ks = df.groupby("st2").agg(
@@ -909,14 +924,14 @@ def tab_macro(df, rates_df, events_df):
             Yield Curve: <b style="color:{'#E03030' if spread_v < 0 else '#28B060'}">
               {'⚠️ Inverted ' if spread_v < 0 else '✅ Normal '}{spread_v:+.2f}%</b><br>
             Risk Signal: <b style="color:#fff">
-              {'High — inverted curve historically precedes recessions' if spread_v < 0
-               else 'Moderate — elevated rates pressuring NIM' if fed_rate > 4
-               else 'Low — accommodative rate environment'}</b>
+              {'High - inverted curve historically precedes recessions' if spread_v < 0
+               else 'Moderate - elevated rates pressuring NIM' if fed_rate > 4
+               else 'Low - accommodative rate environment'}</b>
           </div>
         </div>
         """, unsafe_allow_html=True)
 
-        # NIM analysis — how rate changes affect bank profitability
+        # NIM analysis - how rate changes affect bank profitability
         avg_nim = df["net_interest_margin"].median() if "net_interest_margin" in df.columns else None
         st.markdown(f"""
         <div style="background:rgba(0,43,81,0.5);border:1px solid rgba(70,149,200,0.2);
@@ -929,8 +944,8 @@ def tab_macro(df, rates_df, events_df):
             Portfolio Median NIM: <b style="color:#fff">{f'{avg_nim:.2f}%' if avg_nim else 'N/A'}</b><br>
             Fed Funds Rate: <b style="color:#fff">{fed_rate:.2f}%</b><br>
             NIM Compression Risk: <b style="color:{'#E03030' if avg_nim and avg_nim < fed_rate/2 else '#28B060'}">
-              {'High — NIM below half of Fed rate' if avg_nim and avg_nim < fed_rate/2
-               else 'Low — NIM healthy relative to rates'}</b><br>
+              {'High - NIM below half of Fed rate' if avg_nim and avg_nim < fed_rate/2
+               else 'Low - NIM healthy relative to rates'}</b><br>
             Rate Sensitivity: Banks with long-duration assets most exposed to<br>
             mark-to-market losses if rates remain elevated.
           </div>
@@ -989,7 +1004,7 @@ def tab_ml(df):
             st.plotly_chart(fig, use_container_width=True)
 
     with c2:
-        st.markdown('<div class="section-title">Feature Importance — Random Forest</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Feature Importance - Random Forest</div>', unsafe_allow_html=True)
         if not fi.empty:
             fig = go.Figure(go.Bar(
                 x=fi["importance"], y=fi["feature"], orientation="h",
@@ -1177,7 +1192,7 @@ def tab_search(df):
         nc    = next((c for c in ["bank_name","INSTNAME","city"] if c in row.index), None)
         label = row.get(nc,"Unknown") if nc else "Unknown"
 
-        with st.expander(f"🏦  {label}   —   {row.get('city','')}, {row.get('state','')}"):
+        with st.expander(f"🏦  {label}   -   {row.get('city','')}, {row.get('state','')}"):
             st.markdown(f"**Risk Classification:** {badge}", unsafe_allow_html=True)
             st.markdown('<div class="ms-line" style="margin:.5rem 0"></div>', unsafe_allow_html=True)
             ca,cb2,cc,cd2 = st.columns(4)
@@ -1212,6 +1227,7 @@ def main():
         st.code("python src/pipeline/fdic_pipeline.py\npython src/ml/risk_engine.py")
         return
 
+    _init_rates_if_needed()
     data         = load_all()
     institutions = to_num(data.get("institutions", pd.DataFrame()))
     failures     = data.get("failures", pd.DataFrame())
@@ -1251,7 +1267,7 @@ def main():
     kri_cards(df_f)
     st.markdown('<div class="ms-line"></div>', unsafe_allow_html=True)
 
-    # Tab nav using buttons + session_state — only reliable way to prevent redirect
+    # Tab nav using buttons + session_state - only reliable way to prevent redirect
     TABS = {
         "📊 Executive":   "exec",
         "🗺️ Heatmap":     "heat",
