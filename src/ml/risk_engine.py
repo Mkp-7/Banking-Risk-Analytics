@@ -60,7 +60,7 @@ def load_data():
                     institutions[col] = pd.to_numeric(latest_rates.get(col, np.nan), errors="coerce")
             print(f"  Macro features added: fed_funds={latest_rates.get('fed_funds','N/A'):.2f}%")
     except Exception as e:
-        print(f"  Note: interest rate data not found ({e}) — run fred_pipeline.py first")
+        print(f"  Note: interest rate data not found ({e}) - run fred_pipeline.py first")
 
     conn.close()
     print(f"  institutions: {len(institutions)} rows, {len(institutions.columns)} columns")
@@ -260,9 +260,13 @@ def train_clustering(df: pd.DataFrame) -> pd.DataFrame:
         - cluster_summary["capital_adequacy_ratio"]
         + cluster_summary["npl_ratio"]
     )
+    # rank ascending: rank 1 = lowest risk_score = least stressed = Low Risk
+    # rank 4 = highest risk_score = most stressed = Critical Risk
     rank = cluster_summary["risk_score"].rank(method="first").fillna(1).astype(int)
     label_map = {1: "Low Risk", 2: "Elevated Risk", 3: "High Risk", 4: "Critical Risk"}
-    labels = {int(k): label_map[int(v)] for k, v in rank.items()}
+    labels = {int(cluster_id): label_map[int(rank_val)] for cluster_id, rank_val in rank.items()}
+    print(f"  Cluster risk scores: {cluster_summary['risk_score'].to_dict()}")
+    print(f"  Cluster label mapping: {labels}")
     df["risk_cluster_label"] = df["cluster"].map(labels)
 
     centers_df = pd.DataFrame(
